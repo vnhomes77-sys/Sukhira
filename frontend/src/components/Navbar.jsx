@@ -84,6 +84,7 @@ const Navbar = ({ activeSeason, setActiveSeason }) => {
       </Link>
 
       <div className="nav-seasons-tabs">
+        <div className={`nav-season-slider active-${activeSeason}`} />
         <button
           onClick={() => handleSeasonTabClick('winter')}
           className={`nav-season-tab ${activeSeason === 'winter' ? 'active' : ''}`}

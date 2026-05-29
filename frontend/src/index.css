@@ -84,32 +84,60 @@ button, input, select, textarea {
 
 .nav-seasons-tabs {
   display: flex;
-  gap: 1.5rem;
   border-radius: 30px;
-  padding: 0.3rem;
+  padding: 3px;
   background: var(--bg-tabs);
+  position: relative;
+}
+
+.nav-season-slider {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  left: 3px;
+  width: 110px;
+  background: var(--accent-color);
+  border-radius: 25px;
+  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.35s ease;
+  z-index: 0;
+  box-shadow: var(--shadow-sm);
+}
+
+.nav-season-slider.active-winter {
+  transform: translateX(0);
+}
+
+.nav-season-slider.active-summer {
+  transform: translateX(110px);
+}
+
+.nav-season-slider.active-monsoon {
+  transform: translateX(220px);
 }
 
 .nav-season-tab {
-  padding: 0.6rem 1.4rem;
+  width: 110px;
+  height: 38px;
   border-radius: 25px;
   font-weight: 600;
-  font-size: 0.95rem;
+  font-size: 0.92rem;
   cursor: pointer;
   border: none;
   background: transparent;
   color: var(--text-muted);
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 0.4rem;
-  transition: all 0.3rem ease;
+  transition: color 0.35s ease;
+  z-index: 1;
+  position: relative;
 }
 
 .nav-season-tab.active {
-  background: var(--accent-color);
   color: var(--bg-card);
-  box-shadow: var(--shadow-md);
 }
+
 
 .nav-actions {
   display: flex;
