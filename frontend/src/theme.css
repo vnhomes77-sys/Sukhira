@@ -1,0 +1,88 @@
+/* theme.css */
+
+/* ❄️ WINTER THEME OVERRIDES */
+.theme-winter {
+  --bg-app: #f2f7fc;
+  --bg-card: rgba(255, 255, 255, 0.8);
+  --bg-nav: rgba(242, 247, 252, 0.8);
+  --bg-tabs: #e2ecf5;
+  --border-color: rgba(186, 209, 230, 0.45);
+  --text-main: #182c3c;
+  --text-muted: #4e6a82;
+  --accent-color: #3182ce;
+  --accent-light: rgba(49, 130, 206, 0.08);
+  --accent-glow: rgba(49, 130, 206, 0.25);
+  --glass-blur: blur(12px) saturate(180%);
+  --border-radius: 4px; /* Crisp, icy structure */
+  
+  --bg-spotlight: #e6eff7;
+  --bg-footer: #0f1c26;
+  --hero-gradient: linear-gradient(to right, rgba(15, 28, 38, 0.85), rgba(15, 28, 38, 0.2));
+  
+  --font-primary: 'Lora', Georgia, serif;
+  --font-title: 'Lora', Georgia, serif;
+  
+  --shadow-sm: 0 2px 8px rgba(24, 44, 60, 0.04);
+  --shadow-md: 0 6px 18px rgba(24, 44, 60, 0.06);
+  --shadow-lg: 0 12px 35px rgba(24, 44, 60, 0.1);
+  --bg-input: #ffffff;
+  --bg-hover: #eaf1f7;
+}
+
+/* ☀️ SUMMER THEME OVERRIDES */
+.theme-summer {
+  --bg-app: #fcf9f2;
+  --bg-card: #ffffff;
+  --bg-nav: rgba(252, 249, 242, 0.85);
+  --bg-tabs: #f2ebd9;
+  --border-color: #ebd9b4;
+  --text-main: #2d2412;
+  --text-muted: #7d6c4d;
+  --accent-color: #dd6b20; /* Vibrant summer orange-amber */
+  --accent-light: rgba(221, 107, 32, 0.08);
+  --accent-glow: rgba(221, 107, 32, 0.25);
+  --glass-blur: blur(6px);
+  --border-radius: 16px; /* Smooth rounded friendly edges */
+  
+  --bg-spotlight: #fefdfa;
+  --bg-footer: #1a140a;
+  --hero-gradient: linear-gradient(to right, rgba(26, 20, 10, 0.85), rgba(26, 20, 10, 0.15));
+  
+  --font-primary: 'Montserrat', sans-serif;
+  --font-title: 'Montserrat', sans-serif;
+  
+  --shadow-sm: 0 3px 8px rgba(125, 108, 77, 0.04);
+  --shadow-md: 0 10px 24px rgba(125, 108, 77, 0.07);
+  --shadow-lg: 0 20px 48px rgba(125, 108, 77, 0.1);
+  --bg-input: #fdfdfc;
+  --bg-hover: #f7f1e1;
+}
+
+/* 🌧️ MONSOON THEME OVERRIDES */
+.theme-monsoon {
+  --bg-app: #ebf2ef;
+  --bg-card: #ffffff;
+  --bg-nav: rgba(235, 242, 239, 0.85);
+  --bg-tabs: #d9e5e0;
+  --border-color: #cadad2;
+  --text-main: #0a1f16;
+  --text-muted: #496155;
+  --accent-color: #059669; /* Lush rain-washed emerald */
+  --accent-light: rgba(5, 150, 105, 0.08);
+  --accent-glow: rgba(5, 150, 105, 0.25);
+  --glass-blur: blur(8px);
+  --border-radius: 10px; /* Natural organic curvature */
+  
+  --bg-spotlight: #f0f6f4;
+  --bg-footer: #07140e;
+  --hero-gradient: linear-gradient(to right, rgba(7, 20, 14, 0.85), rgba(7, 20, 14, 0.15));
+  
+  --font-primary: 'Inter', sans-serif;
+  --font-title: 'Outfit', sans-serif; /* High modern contrast */
+  
+  --shadow-sm: 0 2px 8px rgba(73, 97, 85, 0.04);
+  --shadow-md: 0 8px 20px rgba(73, 97, 85, 0.07);
+  --shadow-lg: 0 16px 40px rgba(73, 97, 85, 0.1);
+  --bg-input: #fafcfa;
+  --bg-hover: #e2ede8;
+}

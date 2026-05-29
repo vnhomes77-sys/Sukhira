@@ -1,0 +1,15 @@
+{
+  "name": "sukhira-seasonal-store",
+  "version": "1.0.0",
+  "description": "Full-stack seasonal e-commerce store",
+  "main": "index.js",
+  "scripts": {
+    "install-all": "npm install && cd frontend && npm install && cd ../backend && npm install",
+    "dev-backend": "cd backend && node server.js",
+    "dev-frontend": "cd frontend && npm run dev",
+    "dev": "npx concurrently \"npm run dev-backend\" \"npm run dev-frontend\""
+  },
+  "dependencies": {
+    "concurrently": "^8.2.2"
+  }
+}
