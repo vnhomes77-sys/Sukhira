@@ -5,7 +5,7 @@ import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
 import ProductCard from '../components/ProductCard';
 
-const ProductDetail = () => {
+const ProductDetail = ({ setActiveSeason }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
@@ -38,6 +38,9 @@ const ProductDetail = () => {
       if (res.ok) {
         const data = await res.json();
         setProduct(data);
+        if (setActiveSeason) {
+          setActiveSeason(data.season);
+        }
         setActiveImageIdx(0);
         if (data.variants && data.variants.length > 0) {
           setSelectedVariant(data.variants[0]);

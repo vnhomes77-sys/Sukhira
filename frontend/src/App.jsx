@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 
 // Providers
 import { AuthProvider } from './context/AuthContext';
@@ -26,6 +26,21 @@ import Account from './pages/Account';
 import Login from './pages/Login';
 import Supporting from './pages/Supporting';
 
+const ThemeSync = ({ setActiveSeason }) => {
+  const location = useLocation();
+  useEffect(() => {
+    const path = location.pathname;
+    if (path.includes('/collection/winter')) {
+      setActiveSeason('winter');
+    } else if (path.includes('/collection/summer')) {
+      setActiveSeason('summer');
+    } else if (path.includes('/collection/monsoon')) {
+      setActiveSeason('monsoon');
+    }
+  }, [location.pathname, setActiveSeason]);
+  return null;
+};
+
 function App() {
   // Global season state ('winter', 'summer', 'monsoon')
   // Starts with 'winter' by default or summer depending on choice, let's default to 'winter'
@@ -40,6 +55,7 @@ function App() {
 
   return (
     <BrowserRouter>
+      <ThemeSync setActiveSeason={setActiveSeason} />
       <AuthProvider>
         <CartProvider>
           <div className={`app-container theme-${activeSeason}`}>
@@ -52,7 +68,7 @@ function App() {
               <Routes>
                 <Route path="/" element={<Home activeSeason={activeSeason} />} />
                 <Route path="/collection/:season" element={<SeasonCollection />} />
-                <Route path="/product/:id" element={<ProductDetail />} />
+                <Route path="/product/:id" element={<ProductDetail setActiveSeason={setActiveSeason} />} />
                 <Route path="/cart" element={<Cart />} />
                 <Route path="/checkout" element={<Checkout />} />
                 <Route path="/confirmation/:orderIdStr" element={<OrderConfirmation />} />

@@ -90,34 +90,36 @@ const FilterSidebar = ({ filters, setFilters }) => {
         </div>
       </div>
 
-      {/* Size / Variant Filter */}
-      <div className="filter-group">
-        <h4 className="filter-group-title">Sizes</h4>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
-          {['S', 'M', 'L', 'XL', 'XXL'].map((sz) => {
-            const isSelected = filters.sizes.includes(sz);
-            return (
-              <button
-                key={sz}
-                onClick={() => handleSizeChange(sz)}
-                style={{
-                  padding: '0.4rem',
-                  borderRadius: '6px',
-                  border: isSelected ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
-                  background: isSelected ? 'var(--accent-light)' : 'var(--bg-card)',
-                  color: isSelected ? 'var(--accent-color)' : 'var(--text-main)',
-                  fontWeight: 600,
-                  fontSize: '0.8rem',
-                  cursor: 'pointer',
-                  textAlign: 'center'
-                }}
-              >
-                {sz}
-              </button>
-            );
-          })}
+      {/* Size / Variant Filter (Smart Filtering) */}
+      {(filters.categories.length === 0 || filters.categories.includes('clothing')) && (
+        <div className="filter-group">
+          <h4 className="filter-group-title">Sizes</h4>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '0.5rem' }}>
+            {['S', 'M', 'L', 'XL', 'XXL'].map((sz) => {
+              const isSelected = filters.sizes.includes(sz);
+              return (
+                <button
+                  key={sz}
+                  onClick={() => handleSizeChange(sz)}
+                  style={{
+                    padding: '0.4rem',
+                    borderRadius: '6px',
+                    border: isSelected ? '1px solid var(--accent-color)' : '1px solid var(--border-color)',
+                    background: isSelected ? 'var(--accent-light)' : 'var(--bg-card)',
+                    color: isSelected ? 'var(--accent-color)' : 'var(--text-main)',
+                    fontWeight: 600,
+                    fontSize: '0.8rem',
+                    cursor: 'pointer',
+                    textAlign: 'center'
+                  }}
+                >
+                  {sz}
+                </button>
+              );
+            })}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Star Rating Filter */}
       <div className="filter-group">

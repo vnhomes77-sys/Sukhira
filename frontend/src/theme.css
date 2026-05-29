@@ -13,7 +13,7 @@
   --accent-light: rgba(49, 130, 206, 0.08);
   --accent-glow: rgba(49, 130, 206, 0.25);
   --glass-blur: blur(12px) saturate(180%);
-  --border-radius: 4px; /* Crisp, icy structure */
+  --border-radius: 12px; /* Smooth, semi-rounded */
   
   --bg-spotlight: #e6eff7;
   --bg-footer: #0f1c26;
@@ -42,7 +42,7 @@
   --accent-light: rgba(221, 107, 32, 0.08);
   --accent-glow: rgba(221, 107, 32, 0.25);
   --glass-blur: blur(6px);
-  --border-radius: 16px; /* Smooth rounded friendly edges */
+  --border-radius: 20px; /* Fully rounded */
   
   --bg-spotlight: #fefdfa;
   --bg-footer: #1a140a;
@@ -71,7 +71,7 @@
   --accent-light: rgba(5, 150, 105, 0.08);
   --accent-glow: rgba(5, 150, 105, 0.25);
   --glass-blur: blur(8px);
-  --border-radius: 10px; /* Natural organic curvature */
+  --border-radius: 14px; /* Organic curvature */
   
   --bg-spotlight: #f0f6f4;
   --bg-footer: #07140e;
