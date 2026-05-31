@@ -9,7 +9,7 @@ const dbPath = path.resolve(__dirname, 'database.db');
 let db;
 let useCloudDatabase = false;
 
-if (process.env.DATABASE_URL) {
+if (process.env.DATABASE_URL && process.env.USE_CLOUD_DB === 'true') {
   useCloudDatabase = true;
   logger.warn(`Production Database Connection URL detected. DB endpoint: ${process.env.DATABASE_URL.split('@')[1] || 'Confidential URL'}`);
 } else {
