@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Facebook, Instagram, Twitter, Mail, Send } from 'lucide-react';
+import { Facebook, Instagram, Twitter, Mail, Send, Snowflake, Sun, CloudRain } from 'lucide-react';
 
 const Footer = () => {
   const [email, setEmail] = useState('');
@@ -37,9 +37,24 @@ const Footer = () => {
         <div className="footer-col">
           <h4>Shop Seasons</h4>
           <ul className="footer-links">
-            <li><Link to="/collection/winter">❄️ Winter Collection</Link></li>
-            <li><Link to="/collection/summer">☀️ Summer Collection</Link></li>
-            <li><Link to="/collection/monsoon">🌧️ Monsoon Collection</Link></li>
+            <li>
+              <Link to="/collection/winter" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Snowflake size={14} />
+                <span>Winter Collection</span>
+              </Link>
+            </li>
+            <li>
+              <Link to="/collection/summer" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <Sun size={14} />
+                <span>Summer Collection</span>
+              </Link>
+            </li>
+            <li>
+              <Link to="/collection/monsoon" style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                <CloudRain size={14} />
+                <span>Monsoon Collection</span>
+              </Link>
+            </li>
           </ul>
         </div>
 

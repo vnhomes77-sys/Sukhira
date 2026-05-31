@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { Package, Search, PhoneCall, HelpCircle, AlertCircle } from 'lucide-react';
+import { Package, Search, PhoneCall, HelpCircle, AlertCircle, Settings, Truck, MapPin, Warehouse } from 'lucide-react';
+import { API_URL } from '../config';
 
 const OrderTracking = () => {
   const { orderIdStr } = useParams();
@@ -26,7 +27,7 @@ const OrderTracking = () => {
     setLoading(true);
     setError('');
     try {
-      const res = await fetch(`http://localhost:5000/api/orders/${idStr}`);
+      const res = await fetch(`${API_URL}/orders/${idStr}`);
       if (res.ok) {
         const data = await res.json();
         setOrder(data);
@@ -119,17 +120,117 @@ const OrderTracking = () => {
             </div>
           </div>
 
-          {/* Interactive simulator button */}
-          <div style={{ textAlign: 'right', marginBottom: '1.5rem' }}>
-            <button
-              onClick={simulateAdvanceStatus}
-              disabled={order.status === 'delivered'}
-              className="btn-secondary"
-              style={{ fontSize: '0.8rem', padding: '0.3rem 0.8rem' }}
-            >
-              ⚙ Simulate Next Delivery Step
-            </button>
+          {/* Interactive logistics details bar */}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
+            <div>
+              <span style={{ fontSize: '0.88rem', fontWeight: 600, color: 'var(--text-muted)' }}>Logistics: </span>
+              <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text-main)', textTransform: 'capitalize' }}>
+                {order.courier_name || 'Standard Courier'} ({order.tracking_number || 'Pending AWB Assignment'})
+              </span>
+            </div>
           </div>
+
+          {/* SVG Route Map */}
+          <div style={{ background: 'var(--bg-card)', border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius)', padding: '2rem 1.5rem', marginBottom: '2.5rem', boxShadow: 'var(--shadow-sm)', textAlign: 'center', position: 'relative' }}>
+            <h4 style={{ fontWeight: 800, fontSize: '1.1rem', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
+              <Truck size={18} style={{ color: 'var(--accent-color)' }} /> Live Transit Route Map
+            </h4>
+            <div style={{ overflowX: 'auto', padding: '1rem 0' }}>
+              <svg viewBox="0 0 600 120" style={{ minWidth: '550px', height: '100px', display: 'block', margin: '0 auto' }}>
+                {/* Gray Track Path */}
+                <line x1="60" y1="60" x2="540" y2="60" stroke="var(--border-color)" strokeWidth="4" strokeLinecap="round" />
+                
+                {/* Active Colored Track Path */}
+                <line 
+                  x1="60" 
+                  y1="60" 
+                  x2={60 + Math.min(activeIdx, 4) * 120} 
+                  y2="60" 
+                  stroke="var(--accent-color)" 
+                  strokeWidth="4" 
+                  strokeLinecap="round" 
+                  style={{ transition: 'x2 0.8s ease-in-out' }}
+                />
+
+                {/* Tracking nodes */}
+                {[
+                  { x: 60, label: 'Warehouse', city: 'Noida Central' },
+                  { x: 180, label: 'Approved', city: 'Delhi Hub' },
+                  { x: 300, label: 'Packed', city: 'Sorting Facility' },
+                  { x: 420, label: 'In Transit', city: 'Outbound Truck' },
+                  { x: 540, label: 'Delivered', city: order.shipping_address?.city || 'Destination' }
+                ].map((node, index) => {
+                  const nodeActive = index <= activeIdx;
+                  const isCurrentNode = index === activeIdx || (index === 4 && activeIdx === 5);
+                  return (
+                    <g key={index}>
+                      {/* Node Glow ring */}
+                      {isCurrentNode && (
+                        <circle 
+                          cx={node.x} 
+                          cy="60" 
+                          r="14" 
+                          fill="none" 
+                          stroke="var(--accent-color)" 
+                          strokeWidth="2" 
+                          style={{ opacity: 0.4, transformOrigin: `${node.x}px 60px`, animation: 'pulse 2s infinite' }}
+                        />
+                      )}
+                      {/* Node Circle */}
+                      <circle 
+                        cx={node.x} 
+                        cy="60" 
+                        r="8" 
+                        fill={nodeActive ? 'var(--accent-color)' : 'var(--bg-card)'} 
+                        stroke={nodeActive ? 'var(--accent-color)' : 'var(--border-color)'} 
+                        strokeWidth="3" 
+                      />
+                      {/* Node Text Info */}
+                      <text x={node.x} y="30" textAnchor="middle" style={{ fontSize: '0.75rem', fontWeight: 800, fill: nodeActive ? 'var(--text-main)' : 'var(--text-muted)' }}>
+                        {node.label}
+                      </text>
+                      <text x={node.x} y="90" textAnchor="middle" style={{ fontSize: '0.7rem', fontWeight: 500, fill: 'var(--text-muted)' }}>
+                        {node.city}
+                      </text>
+                    </g>
+                  );
+                })}
+
+                {/* Flying Cargo Truck icon on active location */}
+                {activeIdx >= 0 && activeIdx < 5 && (
+                  <g style={{ transform: `translateX(${60 + activeIdx * 120 - 12}px) translateY(44px)`, transition: 'transform 0.8s ease-in-out' }}>
+                    <rect width="24" height="24" rx="12" fill="var(--accent-color)" style={{ filter: 'drop-shadow(0 2px 4px rgba(0,0,0,0.15))' }} />
+                    <svg viewBox="0 0 24 24" width="14" height="14" x="5" y="5" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <rect x="1" y="3" width="15" height="13" />
+                      <polygon points="16 8 20 8 23 11 23 16 16 16 16 8" />
+                      <circle cx="5.5" cy="18.5" r="2.5" />
+                      <circle cx="18.5" cy="18.5" r="2.5" />
+                    </svg>
+                  </g>
+                )}
+                {/* Map pin at destination when delivered */}
+                {activeIdx === 5 && (
+                  <g style={{ transform: `translateX(528px) translateY(44px)` }}>
+                    <rect width="24" height="24" rx="12" fill="#10b981" />
+                    <svg viewBox="0 0 24 24" width="14" height="14" x="5" y="5" fill="none" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+                      <circle cx="12" cy="10" r="3" />
+                    </svg>
+                  </g>
+                )}
+              </svg>
+            </div>
+            {/* Simulated Live Route Checkpoint updates */}
+            <div style={{ marginTop: '1rem', borderTop: '1px solid var(--border-color)', paddingTop: '1rem', fontSize: '0.88rem', color: 'var(--text-muted)' }}>
+              {activeIdx === 0 && <p>📦 <strong>Checkpoint Status:</strong> Order details submitted at Central Warehouse Noida. Courier partner pickup scheduled.</p>}
+              {activeIdx === 1 && <p>🛡️ <strong>Checkpoint Status:</strong> Seller approved. Package labeled and awaiting transit manifest release.</p>}
+              {activeIdx === 2 && <p>📦 <strong>Checkpoint Status:</strong> Packed and ready. Dispatched from sorting center to outbound transit vehicle.</p>}
+              {activeIdx === 3 && <p>🚚 <strong>Checkpoint Status:</strong> In transit via interstate highway route to recipient's local sorting hub.</p>}
+              {activeIdx === 4 && <p>🛵 <strong>Checkpoint Status:</strong> Out for delivery. Delivery executive is heading to customer address. Drive Speed: 38 km/h.</p>}
+              {activeIdx === 5 && <p>✅ <strong>Checkpoint Status:</strong> Delivered. Package received at customer destination. Thank you for shopping with Sukhira!</p>}
+            </div>
+          </div>
+
 
           {/* Status Timeline */}
           <div className="tracking-timeline">

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { CheckCircle, Calendar, Package, ArrowRight } from 'lucide-react';
+import { API_URL } from '../config';
 
 const OrderConfirmation = () => {
   const { orderIdStr } = useParams();
@@ -13,7 +14,7 @@ const OrderConfirmation = () => {
 
   const fetchOrderDetails = async () => {
     try {
-      const res = await fetch(`http://localhost:5000/api/orders/${orderIdStr}`);
+      const res = await fetch(`${API_URL}/orders/${orderIdStr}`);
       if (res.ok) {
         const data = await res.json();
         setOrder(data);

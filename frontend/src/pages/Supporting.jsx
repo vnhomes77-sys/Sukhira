@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { useLocation } from 'react-router-dom';
+import { useNotification } from '../context/NotificationContext';
 import { Mail, Phone, MapPin, Send, HelpCircle, Info } from 'lucide-react';
 
 const Supporting = () => {
   const { pathname } = useLocation();
+  const { showNotification } = useNotification();
 
   // Contact Form State
   const [cName, setCName] = useState('');
@@ -19,7 +21,7 @@ const Supporting = () => {
       setCEmail('');
       setCMessage('');
       setTimeout(() => setCSubmitted(false), 5000);
-      alert('Your enquiry has been received! Our support representatives will reach out in 24 hours.');
+      showNotification('Your enquiry has been received! Our support representatives will reach out in 24 hours.', 'success');
     }
   };
 

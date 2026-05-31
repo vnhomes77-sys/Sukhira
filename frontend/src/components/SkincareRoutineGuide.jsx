@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, Snowflake, Sun, CloudRain } from 'lucide-react';
 
 const SkincareRoutineGuide = ({ season }) => {
   const [openIndex, setOpenIndex] = useState(0);
@@ -11,7 +11,7 @@ const SkincareRoutineGuide = ({ season }) => {
   const getRoutineData = () => {
     if (season === 'winter') {
       return {
-        title: '❄️ Winter Skin Barrier Protection Guide',
+        title: 'Winter Skin Barrier Protection Guide',
         desc: 'Cold winds and dry indoor heating strip away moisture. Focus on rich oil-based hydration and barrier recovery.',
         steps: [
           {
@@ -43,7 +43,7 @@ const SkincareRoutineGuide = ({ season }) => {
       };
     } else if (season === 'summer') {
       return {
-        title: '☀️ Summer Matte & Cooling Routine',
+        title: 'Summer Matte & Cooling Routine',
         desc: 'High temperatures and sun exposure cause sweating, sunburns, and clogged pores. Prioritize light gel-textures and strong SPF.',
         steps: [
           {
@@ -75,7 +75,7 @@ const SkincareRoutineGuide = ({ season }) => {
       };
     } else {
       return {
-        title: '🌧️ Monsoon Anti-Bacterial & Clarifying Guide',
+        title: 'Monsoon Anti-Bacterial & Clarifying Guide',
         desc: 'High humidity combined with dirty rainwater triggers fungal infections, oily skin, and sticky hair. Keep it anti-microbial and non-greasy.',
         steps: [
           {
@@ -110,9 +110,19 @@ const SkincareRoutineGuide = ({ season }) => {
 
   const data = getRoutineData();
 
+  const getRoutineIcon = () => {
+    const iconStyle = { marginRight: '0.6rem', verticalAlign: 'middle', color: 'var(--accent-color)' };
+    if (season === 'winter') return <Snowflake size={24} style={iconStyle} />;
+    if (season === 'summer') return <Sun size={24} style={iconStyle} />;
+    return <CloudRain size={24} style={iconStyle} />;
+  };
+
   return (
     <div className="routine-guide-section">
-      <h2>{data.title}</h2>
+      <h2 style={{ display: 'flex', alignItems: 'center' }}>
+        {getRoutineIcon()}
+        <span>{data.title}</span>
+      </h2>
       <p>{data.desc}</p>
       
       <div className="accordion-container">

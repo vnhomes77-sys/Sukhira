@@ -3,13 +3,16 @@ import { useParams, useNavigate, Link } from 'react-router-dom';
 import { Star, ShoppingCart, Heart, ShieldAlert, Award, RefreshCw } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 import ProductCard from '../components/ProductCard';
+import { API_URL } from '../config';
 
 const ProductDetail = ({ setActiveSeason }) => {
   const { id } = useParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
   const { wishlist, toggleWishlist, user } = useAuth();
+  const { showNotification } = useNotification();
 
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -34,7 +37,7 @@ const ProductDetail = ({ setActiveSeason }) => {
   const fetchProductDetails = async () => {
     setLoading(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/products/${id}`);
+      const res = await fetch(`${API_URL}/products/${id}`);
       if (res.ok) {
         const data = await res.json();
         setProduct(data);
@@ -49,7 +52,7 @@ const ProductDetail = ({ setActiveSeason }) => {
         }
 
         // Fetch related products (same season, exclude current)
-        const relRes = await fetch(`http://localhost:5000/api/products?season=${data.season}`);
+        const relRes = await fetch(`${API_URL}/products?season=${data.season}`);
         if (relRes.ok) {
           const relData = await relRes.json();
           setRelatedProducts(relData.filter((p) => p.id !== data.id).slice(0, 4));
@@ -65,6 +68,7 @@ const ProductDetail = ({ setActiveSeason }) => {
   };
 
   const handleImageMouseMove = (e) => {
+    if (window.matchMedia('(max-width: 768px)').matches) return;
     const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
     const x = ((e.clientX - left) / width) * 100;
     const y = ((e.clientY - top) / height) * 100;
@@ -83,7 +87,7 @@ const ProductDetail = ({ setActiveSeason }) => {
 
   const handleAddToCart = () => {
     addToCart(product, quantity, selectedVariant || null);
-    alert(`Added ${quantity} x ${product.name} (${selectedVariant || 'Standard'}) to cart!`);
+    showNotification(`Added ${quantity} x ${product.name} (${selectedVariant || 'Standard'}) to cart!`, 'success');
   };
 
   const handleBuyNow = () => {
@@ -93,21 +97,21 @@ const ProductDetail = ({ setActiveSeason }) => {
 
   const handleWishlistToggle = () => {
     if (!user) {
-      alert('Please login to wishlist products!');
+      showNotification('Please login to wishlist products!', 'info');
       return;
     }
-    toggleWishlist(product.id).catch((err) => alert(err.message));
+    toggleWishlist(product.id).catch((err) => showNotification(err.message, 'error'));
   };
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
     if (!reviewName || !reviewComment) {
-      alert('Please fill out all review fields');
+      showNotification('Please fill out all review fields', 'error');
       return;
     }
     setSubmittingReview(true);
     try {
-      const res = await fetch(`http://localhost:5000/api/products/${product.id}/reviews`, {
+      const res = await fetch(`${API_URL}/products/${product.id}/reviews`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -117,14 +121,14 @@ const ProductDetail = ({ setActiveSeason }) => {
         })
       });
       if (res.ok) {
-        alert('Review submitted successfully!');
+        showNotification('Review submitted successfully!', 'success');
         setReviewName('');
         setReviewComment('');
         setReviewRating(5);
         fetchProductDetails(); // reload details to see new review
       } else {
         const data = await res.json();
-        alert(data.message || 'Failed to submit review');
+        showNotification(data.message || 'Failed to submit review', 'error');
       }
     } catch (err) {
       console.error('Error submitting review:', err);

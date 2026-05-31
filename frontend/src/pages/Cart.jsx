@@ -3,10 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 import { Trash2, ShoppingBag, ArrowRight } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 
 const Cart = () => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { showNotification } = useNotification();
   const {
     cartItems,
     updateQuantity,
@@ -16,6 +18,7 @@ const Cart = () => {
     applyCoupon,
     removeCoupon,
     getSubtotal,
+    getBundleDiscount,
     getDiscountAmount,
     getShippingCost,
     getTotal
@@ -37,7 +40,7 @@ const Cart = () => {
 
   const handleProceedToCheckout = () => {
     if (!user) {
-      alert('Please login or create an account to proceed to checkout!');
+      showNotification('Please login or create an account to proceed to checkout!', 'info');
       navigate('/login?redirect=checkout');
     } else {
       navigate('/checkout');
@@ -136,7 +139,14 @@ const Cart = () => {
           {discountPercent > 0 && (
             <div className="summary-row" style={{ color: 'var(--accent-color)', fontWeight: 600 }}>
               <span>Seasonal Coupon ({discountPercent}%)</span>
-              <span>-₹{getDiscountAmount()}</span>
+              <span>-₹{Math.round((getSubtotal() * discountPercent) / 100)}</span>
+            </div>
+          )}
+
+          {getBundleDiscount && getBundleDiscount() > 0 && (
+            <div className="summary-row" style={{ color: '#10b981', fontWeight: 600 }}>
+              <span>Auto Bundle Savings (15%)</span>
+              <span>-₹{getBundleDiscount()}</span>
             </div>
           )}
 

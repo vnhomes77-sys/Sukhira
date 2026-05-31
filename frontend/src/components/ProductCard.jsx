@@ -3,10 +3,12 @@ import { Link } from 'react-router-dom';
 import { Star, ShoppingCart, Heart } from 'lucide-react';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
 
 const ProductCard = ({ product }) => {
   const { addToCart } = useCart();
   const { wishlist, toggleWishlist, user } = useAuth();
+  const { showNotification } = useNotification();
 
   const isWishlisted = wishlist.some((item) => item.product_id === product.id);
 
@@ -14,10 +16,10 @@ const ProductCard = ({ product }) => {
     e.preventDefault();
     e.stopPropagation();
     if (!user) {
-      alert('Please login to add items to your wishlist!');
+      showNotification('Please login to add items to your wishlist!', 'info');
       return;
     }
-    toggleWishlist(product.id).catch((err) => alert(err.message));
+    toggleWishlist(product.id).catch((err) => showNotification(err.message, 'error'));
   };
 
   const handleAddToCartClick = (e) => {
@@ -27,7 +29,7 @@ const ProductCard = ({ product }) => {
     const variant = product.variants && product.variants.length > 0 ? product.variants[0] : null;
     addToCart(product, 1, variant);
     // Visual feedback
-    alert(`Added ${product.name} to cart!`);
+    showNotification(`Added ${product.name} to cart!`, 'success');
   };
 
   // Safe fallback image

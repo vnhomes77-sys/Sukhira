@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
+import { API_URL } from '../config';
 import { User, Package, Heart, MapPin, Key, LogOut, Plus, Trash2, ArrowRight } from 'lucide-react';
 
 const Account = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const { user, logout, addresses, addAddress, deleteAddress, wishlist, toggleWishlist } = useAuth();
+  const { showNotification } = useNotification();
 
   const [activeTab, setActiveTab] = useState(searchParams.get('tab') || 'dashboard');
   const [orders, setOrders] = useState([]);
@@ -52,7 +55,7 @@ const Account = () => {
   const fetchOrders = async () => {
     setLoadingOrders(true);
     try {
-      const res = await fetch('http://localhost:5000/api/orders', {
+      const res = await fetch(`${API_URL}/orders`, {
         headers: { Authorization: `Bearer ${localStorage.getItem('suk_token')}` }
       });
       if (res.ok) {
@@ -89,17 +92,17 @@ const Account = () => {
       setAddrState('');
       setAddrPincode('');
     } catch (err) {
-      alert(err.message);
+      showNotification(err.message, 'error');
     }
   };
 
   const handleChangePasswordSubmit = (e) => {
     e.preventDefault();
     if (newPassword !== confirmPassword) {
-      alert("New passwords don't match!");
+      showNotification("New passwords don't match!", 'error');
       return;
     }
-    alert('Password changed successfully! (Mocked)');
+    showNotification('Password changed successfully! (Mocked)', 'success');
     setOldPassword('');
     setNewPassword('');
     setConfirmPassword('');
@@ -108,7 +111,7 @@ const Account = () => {
   const handleRemoveWishlist = (e, prodId) => {
     e.preventDefault();
     e.stopPropagation();
-    toggleWishlist(prodId).catch((err) => alert(err.message));
+    toggleWishlist(prodId).catch((err) => showNotification(err.message, 'error'));
   };
 
   if (!user) return null;
@@ -147,13 +150,7 @@ const Account = () => {
               <MapPin size={16} />
               <span>Addresses</span>
             </li>
-            <li
-              onClick={() => handleTabChange('password')}
-              className={`account-sidebar-item ${activeTab === 'password' ? 'active' : ''}`}
-            >
-              <Key size={16} />
-              <span>Change Password</span>
-            </li>
+
             <li
               onClick={() => {
                 logout();
@@ -176,7 +173,7 @@ const Account = () => {
               <h2 style={{ fontFamily: 'var(--font-title)', fontWeight: 800, fontSize: '1.8rem', marginBottom: '1.5rem' }}>
                 Welcome, {user.name}!
               </h2>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+              <div className="account-profile-grid">
                 <div>
                   <h4 style={{ fontWeight: 700, marginBottom: '0.8rem' }}>Profile Information</h4>
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', fontSize: '0.95rem' }}>
@@ -293,7 +290,7 @@ const Account = () => {
                   Saved Addresses
                 </h2>
                 {!showAddressForm && (
-                  <button onClick={() => setShowAddressForm(true)} className="btn-primary" style={{ width: 'auto', padding: '0.5rem 1rem' }}>
+                  <button onClick={() => setShowAddressForm(true)} className="btn-primary" style={{ width: 'fit-content', flexGrow: 0, padding: '0.5rem 1rem' }}>
                     <Plus size={16} /> Add New Address
                   </button>
                 )}
@@ -302,7 +299,7 @@ const Account = () => {
               {showAddressForm && (
                 <form onSubmit={handleCreateAddress} className="add-review-form" style={{ background: 'transparent', border: 'none', padding: 0, marginBottom: '2rem' }}>
                   <h4 style={{ fontWeight: 700, marginBottom: '1rem' }}>Add Address</h4>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                  <div className="address-form-grid-2">
                     <div className="form-group">
                       <label>Contact Name</label>
                       <input type="text" placeholder="e.g. Rahul Sharma" value={addrName} onChange={(e) => setAddrName(e.target.value)} required />
@@ -320,7 +317,7 @@ const Account = () => {
                     <label>Address Details (Flat/House No, Building, Area)</label>
                     <input type="text" placeholder="Address Details" value={addrLine} onChange={(e) => setAddrLine(e.target.value)} required />
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '1rem' }}>
+                  <div className="address-form-grid-3">
                     <div className="form-group">
                       <label>City</label>
                       <input type="text" placeholder="City" value={addrCity} onChange={(e) => setAddrCity(e.target.value)} required />
@@ -350,7 +347,7 @@ const Account = () => {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
                   {addresses.map((addr) => (
-                    <div key={addr.id} style={{ border: '1px solid var(--border-color)', borderRadius: 'var(--border-radius)', padding: '1.2rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div key={addr.id} className="address-card-item">
                       <div>
                         <div style={{ fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                           <span>{addr.name}</span>
@@ -365,7 +362,7 @@ const Account = () => {
                       </div>
                       
                       <button
-                        onClick={() => deleteAddress(addr.id).catch((err) => alert(err.message))}
+                        onClick={() => deleteAddress(addr.id).catch((err) => showNotification(err.message, 'error'))}
                         style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: '#ef4444', padding: '0.5rem' }}
                         title="Delete Address"
                       >
@@ -378,31 +375,6 @@ const Account = () => {
             </div>
           )}
 
-          {/* TAB 5: PASSWORD */}
-          {activeTab === 'password' && (
-            <div>
-              <h2 style={{ fontFamily: 'var(--font-title)', fontWeight: 800, fontSize: '1.8rem', marginBottom: '1.5rem' }}>
-                Change Password
-              </h2>
-              <form onSubmit={handleChangePasswordSubmit} className="add-review-form" style={{ background: 'transparent', border: 'none', padding: 0, maxWidth: '400px' }}>
-                <div className="form-group">
-                  <label>Current Password</label>
-                  <input type="password" placeholder="••••••••" value={oldPassword} onChange={(e) => setOldPassword(e.target.value)} required />
-                </div>
-                <div className="form-group">
-                  <label>New Password</label>
-                  <input type="password" placeholder="Min. 8 characters" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} required />
-                </div>
-                <div className="form-group">
-                  <label>Confirm New Password</label>
-                  <input type="password" placeholder="••••••••" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required />
-                </div>
-                <button type="submit" className="btn-primary" style={{ marginTop: '1rem', width: '100%' }}>
-                  Update Password
-                </button>
-              </form>
-            </div>
-          )}
         </div>
       </div>
     </div>

@@ -2,12 +2,29 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { useNotification } from '../context/NotificationContext';
+import { API_URL } from '../config';
 import { Check, CreditCard, Landmark, Truck, ShieldCheck, MapPin } from 'lucide-react';
+
+const loadRazorpayScript = () => {
+  return new Promise((resolve) => {
+    if (window.Razorpay) {
+      resolve(true);
+      return;
+    }
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+};
 
 const Checkout = () => {
   const navigate = useNavigate();
   const { cartItems, getSubtotal, getDiscountAmount, getShippingCost, getTotal, clearCart, couponCode } = useCart();
   const { addresses, addAddress, user } = useAuth();
+  const { showNotification } = useNotification();
 
   const [step, setStep] = useState(1); // 1 = Address, 2 = Summary, 3 = Payment
   
@@ -28,17 +45,15 @@ const Checkout = () => {
   const [newCountry, setNewCountry] = useState('India');
 
   // Payment Option State
-  const [paymentMethod, setPaymentMethod] = useState('COD'); // COD, UPI, CARD
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpiry, setCardExpiry] = useState('');
-  const [cardCvv, setCardCvv] = useState('');
-  const [upiId, setUpiId] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('COD'); // COD, ONLINE
   const [placingOrder, setPlacingOrder] = useState(false);
+  const [showMockModal, setShowMockModal] = useState(false);
+  const [mockOrderData, setMockOrderData] = useState(null);
 
   const handleCreateAddress = async (e) => {
     e.preventDefault();
     if (!newName || !newPhone || !newEmail || !newAddressLine || !newCity || !newState || !newPincode) {
-      alert('Please fill out all address fields.');
+      showNotification('Please fill out all address fields.', 'error');
       return;
     }
     try {
@@ -57,30 +72,30 @@ const Checkout = () => {
       setShowNewAddressForm(false);
       // Selected address will default to the newly loaded list in state
     } catch (err) {
-      alert(err.message);
+      showNotification(err.message, 'error');
     }
   };
 
   // Helper to sync selection if addresses update
   const selectedAddress = addresses.find((a) => a.id === selectedAddressId) || addresses[0];
 
-  const handlePlaceOrder = async () => {
-    if (!selectedAddress) {
-      alert('Please select or add a shipping address.');
-      setStep(1);
-      return;
-    }
+  const handleVerifyMockPayment = async () => {
+    if (!mockOrderData || !selectedAddress) return;
+    setShowMockModal(false);
     setPlacingOrder(true);
     try {
-      const res = await fetch('http://localhost:5000/api/orders', {
+      const verifyRes = await fetch(`${API_URL}/orders/verify-payment`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${localStorage.getItem('suk_token')}`
         },
         body: JSON.stringify({
+          razorpay_order_id: mockOrderData.razorpay_order_id,
+          razorpay_payment_id: `pay_mock_${Math.random().toString(36).substr(2, 9)}`,
+          razorpay_signature: 'mock_signature',
           address_id: selectedAddress.id,
-          payment_method: paymentMethod,
+          payment_method: 'RAZORPAY',
           discount: getDiscountAmount(),
           subtotal: getSubtotal(),
           shipping_cost: getShippingCost(),
@@ -88,18 +103,174 @@ const Checkout = () => {
         })
       });
 
-      if (res.ok) {
-        const data = await res.json();
+      if (verifyRes.ok) {
+        const verifyData = await verifyRes.json();
         clearCart();
-        navigate(`/confirmation/${data.order_id_str}`);
+        navigate(`/confirmation/${verifyData.order_id_str}`);
       } else {
-        const data = await res.json();
-        alert(data.message || 'Failed to place order');
+        const verifyData = await verifyRes.json();
+        showNotification(verifyData.message || 'Mock payment verification failed', 'error');
       }
     } catch (err) {
-      console.error('Error placing order:', err);
+      console.error('Error during mock signature verification:', err);
+      showNotification('An error occurred during mock payment verification.', 'error');
     } finally {
       setPlacingOrder(false);
+    }
+  };
+
+  const handlePlaceOrder = async () => {
+    if (!selectedAddress) {
+      showNotification('Please select or add a shipping address.', 'error');
+      setStep(1);
+      return;
+    }
+    setPlacingOrder(true);
+
+    if (paymentMethod === 'ONLINE') {
+      try {
+        // 1. Load Razorpay script
+        const isScriptLoaded = await loadRazorpayScript();
+        if (!isScriptLoaded) {
+          showNotification('Failed to connect to payment gateway. Please check your network connection.', 'error');
+          setPlacingOrder(false);
+          return;
+        }
+
+        // 2. Initiate Razorpay Order on Backend
+        const orderRes = await fetch(`${API_URL}/orders/razorpay-order`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('suk_token')}`
+          },
+          body: JSON.stringify({
+            total: getTotal(),
+            address_id: selectedAddress,
+            discount: getDiscount(),
+            subtotal: getSubtotal(),
+            shipping_cost: getShippingCost()
+          })
+        });
+
+        if (!orderRes.ok) {
+          const errData = await orderRes.json();
+          throw new Error(errData.message || 'Failed to initialize payment gateway order');
+        }
+
+        const orderData = await orderRes.json();
+
+        // If backend returned a mock fallback order
+        if (orderData.is_mock) {
+          setMockOrderData(orderData);
+          setShowMockModal(true);
+          setPlacingOrder(false);
+          return;
+        }
+
+        // 3. Configure Razorpay checkout options
+        const options = {
+          key: orderData.key_id,
+          amount: orderData.amount,
+          currency: 'INR',
+          name: 'Sukhira',
+          description: 'Premium Skincare Checkout',
+          order_id: orderData.razorpay_order_id,
+          handler: async function (response) {
+            try {
+              setPlacingOrder(true);
+              // 1. Send transaction payload to verify signature and place order
+              const verifyRes = await fetch(`${API_URL}/orders/verify-payment`, {
+                method: 'POST',
+                headers: {
+                  'Content-Type': 'application/json',
+                  Authorization: `Bearer ${localStorage.getItem('suk_token')}`
+                },
+                body: JSON.stringify({
+                  razorpay_order_id: response.razorpay_order_id,
+                  razorpay_payment_id: response.razorpay_payment_id,
+                  razorpay_signature: response.razorpay_signature,
+                  address_id: selectedAddress.id,
+                  payment_method: 'RAZORPAY',
+                  discount: getDiscountAmount(),
+                  subtotal: getSubtotal(),
+                  shipping_cost: getShippingCost(),
+                  total: getTotal()
+                })
+              });
+
+              if (verifyRes.ok) {
+                const verifyData = await verifyRes.json();
+                clearCart();
+                navigate(`/confirmation/${verifyData.order_id_str}`);
+              } else {
+                const verifyData = await verifyRes.json();
+                showNotification(verifyData.message || 'Payment verification failed', 'error');
+              }
+            } catch (err) {
+              console.error('Error during signature verification:', err);
+              showNotification('An error occurred while verifying the payment.', 'error');
+            } finally {
+              setPlacingOrder(false);
+            }
+          },
+          prefill: {
+            name: selectedAddress.name || '',
+            email: selectedAddress.email || '',
+            contact: selectedAddress.phone || ''
+          },
+          notes: {
+            address: selectedAddress.address_line
+          },
+          theme: {
+            color: '#ea580c' // matching our premium orange brand color
+          }
+        };
+
+        const rzp = new window.Razorpay(options);
+        rzp.on('payment.failed', function (resp) {
+          showNotification(`Payment failed: ${resp.error.description}`, 'error');
+          setPlacingOrder(false);
+        });
+        rzp.open();
+      } catch (err) {
+        console.error('Razorpay Checkout error:', err);
+        showNotification(err.message || 'Checkout failed', 'error');
+        setPlacingOrder(false);
+      }
+    } else {
+      // Cash on Delivery (COD)
+      try {
+        // Places standard cash on delivery order
+        const res = await fetch(`${API_URL}/orders`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${localStorage.getItem('suk_token')}`
+          },
+          body: JSON.stringify({
+            address_id: selectedAddress.id,
+            payment_method: paymentMethod,
+            discount: getDiscountAmount(),
+            subtotal: getSubtotal(),
+            shipping_cost: getShippingCost(),
+            total: getTotal()
+          })
+        });
+
+        if (res.ok) {
+          const data = await res.json();
+          clearCart();
+          navigate(`/confirmation/${data.order_id_str}`);
+        } else {
+          const data = await res.json();
+          showNotification(data.message || 'Failed to place order', 'error');
+        }
+      } catch (err) {
+        console.error('Error placing order:', err);
+      } finally {
+        setPlacingOrder(false);
+      }
     }
   };
 
@@ -313,96 +484,20 @@ const Checkout = () => {
                   </div>
                 </div>
 
-                {/* UPI */}
+                {/* ONLINE (RAZORPAY) */}
                 <div
-                  onClick={() => setPaymentMethod('UPI')}
-                  className={`payment-option-row ${paymentMethod === 'UPI' ? 'selected' : ''}`}
+                  onClick={() => setPaymentMethod('ONLINE')}
+                  className={`payment-option-row ${paymentMethod === 'ONLINE' ? 'selected' : ''}`}
                 >
-                  <input type="radio" checked={paymentMethod === 'UPI'} readOnly style={{ marginTop: '3px' }} />
-                  <div style={{ width: '100%' }}>
+                  <input type="radio" checked={paymentMethod === 'ONLINE'} readOnly style={{ marginTop: '3px' }} />
+                  <div>
                     <strong style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1.05rem' }}>
-                      <Landmark size={18} />
-                      UPI (QR Code / UPI ID)
+                      <ShieldCheck size={18} />
+                      Online Payment (Card, UPI, Netbanking - Razorpay)
                     </strong>
                     <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                      Pay using Google Pay, PhonePe, Paytm, or BHIM.
+                      Pay securely using Razorpay's test gateway sandbox.
                     </p>
-                    
-                    {paymentMethod === 'UPI' && (
-                      <div style={{ marginTop: '1.2rem', padding: '1rem', background: 'var(--bg-hover)', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                        {/* Quick mockup QR */}
-                        <div style={{ width: '130px', height: '130px', background: '#ffffff', border: '3px solid #333', display: 'flex', alignItems: 'center', justifyCenter: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: '0.75rem', position: 'relative' }}>
-                          <div style={{ position: 'absolute', top: '10px', left: '10px', width: '20px', height: '20px', background: '#333' }} />
-                          <div style={{ position: 'absolute', top: '10px', right: '10px', width: '20px', height: '20px', background: '#333' }} />
-                          <div style={{ position: 'absolute', bottom: '10px', left: '10px', width: '20px', height: '20px', background: '#333' }} />
-                          <span style={{ color: '#000000' }}>SUKHIRA QR</span>
-                        </div>
-                        <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: '0.5rem 0' }}>Scan to Pay ₹{getTotal()}</p>
-                        
-                        <span style={{ fontSize: '0.8rem', fontWeight: 'bold', alignSelf: 'flex-start', margin: '0.5rem 0 0.3rem 0' }}>Or enter UPI ID:</span>
-                        <input
-                          type="text"
-                          placeholder="username@okaxis"
-                          value={upiId}
-                          onChange={(e) => setUpiId(e.target.value)}
-                          style={{ width: '100%', padding: '0.5rem', borderRadius: '6px', border: '1px solid var(--border-color)', background: '#fff', color: '#000' }}
-                        />
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                {/* CARD */}
-                <div
-                  onClick={() => setPaymentMethod('CARD')}
-                  className={`payment-option-row ${paymentMethod === 'CARD' ? 'selected' : ''}`}
-                >
-                  <input type="radio" checked={paymentMethod === 'CARD'} readOnly style={{ marginTop: '3px' }} />
-                  <div style={{ width: '100%' }}>
-                    <strong style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '1.05rem' }}>
-                      <CreditCard size={18} />
-                      Credit / Debit Card
-                    </strong>
-                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginTop: '0.2rem' }}>
-                      Pay securely with Visa, Mastercard, RuPay, or Amex.
-                    </p>
-                    
-                    {paymentMethod === 'CARD' && (
-                      <div style={{ marginTop: '1.2rem', padding: '1rem', background: 'var(--bg-hover)', borderRadius: '8px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
-                        <div className="form-group" style={{ margin: 0 }}>
-                          <label style={{ fontSize: '0.8rem' }}>Card Number</label>
-                          <input
-                            type="text"
-                            placeholder="16-digit card number"
-                            value={cardNumber}
-                            onChange={(e) => setCardNumber(e.target.value)}
-                            style={{ background: '#fff', color: '#000', border: '1px solid var(--border-color)' }}
-                          />
-                        </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
-                          <div className="form-group" style={{ margin: 0 }}>
-                            <label style={{ fontSize: '0.8rem' }}>Expiry Date</label>
-                            <input
-                              type="text"
-                              placeholder="MM/YY"
-                              value={cardExpiry}
-                              onChange={(e) => setCardExpiry(e.target.value)}
-                              style={{ background: '#fff', color: '#000', border: '1px solid var(--border-color)' }}
-                            />
-                          </div>
-                          <div className="form-group" style={{ margin: 0 }}>
-                            <label style={{ fontSize: '0.8rem' }}>CVV</label>
-                            <input
-                              type="password"
-                              placeholder="3 digits"
-                              value={cardCvv}
-                              onChange={(e) => setCardCvv(e.target.value)}
-                              style={{ background: '#fff', color: '#000', border: '1px solid var(--border-color)' }}
-                            />
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -413,7 +508,7 @@ const Checkout = () => {
                 </button>
                 <button
                   onClick={handlePlaceOrder}
-                  disabled={placingOrder || (paymentMethod === 'CARD' && (!cardNumber || !cardExpiry || !cardCvv)) || (paymentMethod === 'UPI' && !upiId)}
+                  disabled={placingOrder}
                   className="btn-primary"
                   style={{ width: '60%' }}
                 >
@@ -456,6 +551,49 @@ const Checkout = () => {
           </div>
         </div>
       </div>
+
+      {showMockModal && mockOrderData && (
+        <div className="modal-overlay" style={{ zIndex: 10000 }}>
+          <div className="modal-container" style={{ maxWidth: '450px', padding: '2rem', textAlign: 'center' }}>
+            <h3 style={{ fontFamily: 'var(--font-title)', fontWeight: 800, color: 'var(--accent-color)', marginBottom: '1rem' }}>
+              Razorpay Test Sandbox (Mock Simulation)
+            </h3>
+            <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)', marginBottom: '1.5rem', lineHeight: '1.5' }}>
+              Because your Razorpay credentials are unset or mock keys, the system is running in **Mock Simulation Mode**. 
+              You can simulate a successful or failed payment to verify the order placement database logic.
+            </p>
+            
+            <div style={{ background: 'var(--bg-hover)', padding: '1rem', borderRadius: '8px', marginBottom: '1.5rem', textAlign: 'left', border: '1px solid var(--border-color)' }}>
+              <div style={{ fontSize: '0.85rem', marginBottom: '0.3rem' }}>Mock Order ID: <strong>{mockOrderData.razorpay_order_id}</strong></div>
+              <div style={{ fontSize: '0.95rem', fontWeight: 800 }}>Payable Total: <span style={{ color: 'var(--accent-color)' }}>₹{getTotal()}</span></div>
+            </div>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+              <button 
+                onClick={handleVerifyMockPayment}
+                className="btn-primary" 
+                style={{ width: '100%' }}
+              >
+                Simulate Successful Payment
+              </button>
+              <button 
+                onClick={() => { setShowMockModal(false); showNotification('Simulated payment failure.', 'error'); }}
+                className="btn-danger" 
+                style={{ width: '100%' }}
+              >
+                Simulate Failed Payment
+              </button>
+              <button 
+                onClick={() => setShowMockModal(false)}
+                className="btn-secondary" 
+                style={{ width: '100%' }}
+              >
+                Cancel Checkout
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
